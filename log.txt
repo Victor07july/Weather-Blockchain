@@ -1,0 +1,1 @@
+Error: chaincode install failed with status: 500 - failed to invoke backing implementation of 'InstallChaincode': chaincode already successfully installed (package ID 'fabpki_1.0:f66aaa80c61679b5de9bf48465e2b2ac6060e9298b6acf44d6cc4510e93be024')
