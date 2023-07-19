@@ -5,7 +5,7 @@ import requests
 # https://python-forum.io/thread-27991.html
 # https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
 
-def getEstacao(URL):
+def getEstacao(URL, idEstacao):
 
     # faz o request da url
     response = requests.get(URL)
@@ -18,7 +18,11 @@ def getEstacao(URL):
     tabelaPrecipitacao = soup.select_one('body > table:nth-child(2) > tbody:nth-child(2)') 
     tabelaDados = soup.select_one('body > table:nth-child(3) > tbody:nth-child(2)')
 
-    idEstacao = input("Insira o ID da estação: ")
+    # horário de atualização
+    ultimaAtualizacao = soup.select_one('body > p:nth-child(1) > font:nth-child(1)')
+    #print(ultimaAtualizacao.text)
+
+    #idEstacao = input("Insira o ID da estação: ")
 
     td_list = []
     linhaPrecipitacao = []
@@ -73,6 +77,7 @@ def getEstacao(URL):
             print(tr.find_all('td')[0].text.strip(), end=' | ')
         print(' ')
 
-    return(linhaPrecipitacao, linhaDados)
+    return(linhaPrecipitacao, linhaDados, ultimaAtualizacao.text)
 
-# getEstacao("http://alertario.rio.rj.gov.br/upload/TempoReal.html")
+#URL = "http://alertario.rio.rj.gov.br/upload/TempoReal.html"
+#getEstacao(URL)

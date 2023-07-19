@@ -71,8 +71,17 @@ type WeatherAPI struct {
 	Situation   string `json:"situation"`
 	Temperature string `json:"temperature"`
 	//  Timestamp   string `json:"timestamp"`
-	Date string `json:"date"`
-	Hour string `json:"hour"`
+	Date 		string `json:"date"`
+	Hour 		string `json:"hour"`
+}
+
+
+type DadosEstacao struct {
+	// ID da estação é a chave e não entra no struct
+	DadosPrecipitacao 	[]string `json:"dadosprecipitacao"`
+	DadosMeteorologicos []string `json:"dadosmeteorologicos"`
+	HorarioAtualizacao    string `json:"horarioatualizacao"`
+	HorarioInserção 	  string `json:"horarioinsercao"`
 }
 
 
@@ -325,24 +334,6 @@ func (s *SmartContract) insertWeatherForecastRJ(stub shim.ChaincodeStubInterface
 	)
 }
 
-/*
-func (s *SmartContract) testCompositeKey(stub shim.ChaincodeStubInterface, args []string) sc.Response {
-
-	// https://github.com/hyperledger/fabric-samples/blob/c04253d55407e5fe7217d4931738fe7273b4a8a5/token-erc-721/chaincode-go/chaincode/erc721-contract_test.go#L24
-	// https://github.com/hyperledger/fabric-chaincode-go/blob/b84622ba6a7a9e543f3ca1994850c41423bc29a2/shim/stub.go
-
-	//validate args vector lenght
-	if len(args) != 6 {
-		return shim.Error("It was expected the parameters: <Região> <Temperatura Min/Max> <Céu Madrugada> <Céu Manhã>  <Insert Timestamp> <Forecast Timestamp>")
-	}
-	
-	
-
-}
-
-*/
-
-
 func (s *SmartContract) getWeatherForecastRJ(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 
 	//validate args vector lenght
@@ -398,7 +389,55 @@ func (s *SmartContract) getWeatherForecastRJ(stub shim.ChaincodeStubInterface, a
 
 }
 
+func (s *SmartContract) insertStationData(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 
+	//validate args vector lenght
+	if len(args) != 5 {
+		return shim.Error("Os parâmetros esperados são: <ID da Estação> <Dados de precipitação> <Dados meteorológicos> <Horário de atualização> <Horário de inserção>")
+	}
+
+	idEstacao := args[0]
+	dadosPrecipitacao := []string{args[1]}
+	dadosMeteorologicos := []string{args[2]}
+	horarioAtualizacao := args[3]
+	horarioInsercao := args[4]
+
+	var dadosEstacao = DadosEstacao{
+		DadosPrecipitacao: dadosPrecipitacao, 
+		DadosMeteorologicos: dadosMeteorologicos, 
+		HorarioAtualizacao: horarioAtualizacao, 
+		HorarioInserção: horarioInsercao,
+	}
+
+	dadosEstacaoAsBytes, _ := json.Marshal(dadosEstacao)
+
+	//registers forecast in the ledger
+	stub.PutState(idEstacao, dadosEstacaoAsBytes)
+
+	var info = "Dados da estação registrados com sucesso!"
+
+	// returns all station info
+	return shim.Success(
+		[]byte(info),
+	)
+}
+
+/*
+func (s *SmartContract) testCompositeKey(stub shim.ChaincodeStubInterface, args []string) sc.Response {
+
+	// https://github.com/hyperledger/fabric-samples/blob/c04253d55407e5fe7217d4931738fe7273b4a8a5/token-erc-721/chaincode-go/chaincode/erc721-contract_test.go#L24
+	// https://github.com/hyperledger/fabric-chaincode-go/blob/b84622ba6a7a9e543f3ca1994850c41423bc29a2/shim/stub.go
+
+	//validate args vector lenght
+	if len(args) != 6 {
+		return shim.Error("It was expected the parameters: <Região> <Temperatura Min/Max> <Céu Madrugada> <Céu Manhã>  <Insert Timestamp> <Forecast Timestamp>")
+	}
+	
+	
+
+}
+
+*/
 
 /*
  * The main function starts up the chaincode in the container during instantiate

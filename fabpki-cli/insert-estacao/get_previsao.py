@@ -117,4 +117,4 @@ def getPrevisao(print_output = True):
 
     return previsoes
     
-# getPrevisao(print_output=True)
+#getPrevisao(print_output=True)
