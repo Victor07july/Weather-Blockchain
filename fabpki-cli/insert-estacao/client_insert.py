@@ -19,6 +19,18 @@ URL = "http://alertario.rio.rj.gov.br/upload/TempoReal.html"
 arrayPrecipitacao = []
 arrayDados = []
 
+# inicializando variáveis
+horaLeituraP = "Indisponível"
+totalUltimaHora = "Indisponível"
+situacao = "Indisponível"
+
+horaLeituraD = "Indisponível"
+direcaoVentoGraus = "Indisponível"
+velocidadeVento = "Indisponível"
+temperatura = "Indisponível"
+pressao = "Indisponível"
+umidade = "Indisponível"
+
 # ------ VERIFICAÇÃO E EXECUÇÃO --------
 
 if __name__ == "__main__":
@@ -29,7 +41,7 @@ if __name__ == "__main__":
         exit(1)
 
     # recebe o id da estação como variavel
-    idEstacao = sys.argv[1]
+    idEstacao = str(sys.argv[1])
 
     # envia o id inserido para a função de verificar estações
     arrayPrecipitacao, arrayDados, ultimaAtualizacaoE = getEstacao(URL, idEstacao)
@@ -54,8 +66,29 @@ if __name__ == "__main__":
 
     # pode ser que uma das estações tenha apenas um dos dados disponiveis (ou nenhum)
     # verifica se pelo menos um dos dados estão disponíveis
-    if arrayDados or arrayPrecipitacao:
+    situacao = ""
+
+    if arrayPrecipitacao or arrayDados:
         print("Sucesso! Uma ou ambas as arrays possui os dados necessários")
+
+        if arrayPrecipitacao:
+            horaLeitura = arrayPrecipitacao[2]
+            totalUltimaHora = arrayPrecipitacao[4]
+            situacao = "Somente precipitacao disponivel"
+
+        if arrayDados:
+            direcaoVentoGraus = arrayDados[3]
+            velocidadeVento = arrayDados[4]
+            temperatura = arrayDados[5]
+            pressao = arrayDados[6]
+            umidade = arrayDados[7]
+            if situacao == "Somente precipitacao disponivel":
+                situacao = "Precipitacao e dados disponiveis"
+            else:
+                situacao = "Somente dados disponiveis"
+
+        
+        print(situacao)
         print("Iniciando o chaincode...")
 
         #creates a loop object to manage async transactions
@@ -78,13 +111,25 @@ if __name__ == "__main__":
             channel_name=channel_name, 
             peers=callpeer,
             cc_name=cc_name, 
-          # cc_version=cc_version,
+        #   cc_version=cc_version,
             fcn='insertStationData',
-            args=[idEstacao, arrayPrecipitacao, arrayDados, timestampEstacao, timestampCliente],
+            args=[
+                idEstacao,
+                horaLeitura, 
+                totalUltimaHora, 
+                situacao, 
+                direcaoVentoGraus, 
+                velocidadeVento, 
+                temperatura, 
+                pressao, 
+                umidade, 
+                str(timestampEstacao), 
+                str(timestampCliente),
+                ],
             cc_pattern=None))
 
         #so far, so good
-        print("Success on register climate")
+        print("Successo ao registrar dados")
     
     else:
         print("Falha! Ambas as arrays estão vazias! Você escolheu um ID válido?")

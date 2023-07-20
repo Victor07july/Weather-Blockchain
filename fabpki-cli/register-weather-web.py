@@ -43,6 +43,43 @@ if __name__ == "__main__":
         print(f"Situação: {situacao}")
         print(f"Temperatura: {temperatura}ºC")
 
+        #creates a loop object to manage async transactions
+        loop = asyncio.get_event_loop()
+
+        #instantiate the hyperledeger fabric client
+        c_hlf = client_fabric(net_profile=(domain[0] + ".json"))
+
+        #get access to Fabric as Admin user
+        admin = c_hlf.get_user(domain[0], 'Admin')
+        for i in domain:
+            callpeer.append("peer0." + i)
+
+        #query peer installed chaincodes, make sure the chaincode is installed
+        # 
+        # print("Checking if the chaincode fabpki is properly installed:")
+        # response = loop.run_until_complete(c_hlf.query_installed_chaincodes(
+        #     requestor=admin,
+        #     peers=[callpeer]
+        # ))
+        # print(response)
+
+        #the Fabric Python SDK do not read the channel configuration, we need to add it mannually'''
+        c_hlf.new_channel(channel_name)
+
+        #invoke the chaincode to register the meter
+        response = loop.run_until_complete(c_hlf.chaincode_invoke(
+            requestor=admin, 
+            channel_name=channel_name, 
+            peers=callpeer,
+            cc_name=cc_name, 
+        # cc_version=cc_version,
+            fcn='registerWeatherFromWeb',
+            args=[cidade, situacao, temperaturaString],
+            cc_pattern=None))
+
+        #so far, so good
+        print("Success on register climate")
+
     except requests.exceptions.RequestException as e:
         print("Ocorreu um erro durante a requisição HTTP:", e)
     
@@ -51,40 +88,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print("Ocorreu um erro:", e)
-
-    #creates a loop object to manage async transactions
-    loop = asyncio.get_event_loop()
-
-    #instantiate the hyperledeger fabric client
-    c_hlf = client_fabric(net_profile=(domain[0] + ".json"))
-
-    #get access to Fabric as Admin user
-    admin = c_hlf.get_user(domain[0], 'Admin')
-    for i in domain:
-    	callpeer.append("peer0." + i)
-
-    #query peer installed chaincodes, make sure the chaincode is installed
-    # 
-    # print("Checking if the chaincode fabpki is properly installed:")
-    # response = loop.run_until_complete(c_hlf.query_installed_chaincodes(
-    #     requestor=admin,
-    #     peers=[callpeer]
-    # ))
-    # print(response)
-
-    #the Fabric Python SDK do not read the channel configuration, we need to add it mannually'''
-    c_hlf.new_channel(channel_name)
-
-    #invoke the chaincode to register the meter
-    response = loop.run_until_complete(c_hlf.chaincode_invoke(
-        requestor=admin, 
-        channel_name=channel_name, 
-        peers=callpeer,
-        cc_name=cc_name, 
-      # cc_version=cc_version,
-        fcn='registerWeatherFromWeb',
-        args=[cidade, situacao, temperaturaString],
-        cc_pattern=None))
-
-    #so far, so good
-    print("Success on register climate")

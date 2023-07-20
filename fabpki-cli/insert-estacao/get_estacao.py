@@ -34,7 +34,7 @@ def getEstacao(URL, idEstacao):
     for tr in tabelaPrecipitacao.find_all('tr'):
         #td_list.append(tr.find_all('td')[0].text.strip())
 
-        if tr.find_all('td')[0].text.strip() == idEstacao:
+        if tr.find_all('td')[0].text.strip() == str(idEstacao):
             flag = True
             #linhaPrecipitacao.append(tr.get_text(", ", strip=True))                
             
@@ -44,6 +44,8 @@ def getEstacao(URL, idEstacao):
                 linhaPrecipitacao.append(td.get_text())
             print(f"Dados de precipitação para a estação {idEstacao}, {tr.find_all('td')[1].text.strip()}: ")
             print(linhaPrecipitacao)
+            print(f"TESTE: {linhaPrecipitacao[2]}")
+
 
     if not flag:
         print("Esta estação não está disponível na tabela de dados de precipitação.")
@@ -70,6 +72,7 @@ def getEstacao(URL, idEstacao):
             print(f"Dados meteorológicos para a estação {idEstacao}, {tr.find_all('td')[1].text.strip()}")
             print(linhaDados)
 
+
     if not flag:
         print("Esta estação não está disponível na tabela de dados meteorológicos.")
         print("Os seguintes ID's estão disponíveis na tabela de dados meteorológicos: ")
@@ -80,4 +83,4 @@ def getEstacao(URL, idEstacao):
     return(linhaPrecipitacao, linhaDados, ultimaAtualizacao.text)
 
 #URL = "http://alertario.rio.rj.gov.br/upload/TempoReal.html"
-#getEstacao(URL)
+#getEstacao(URL, 9)

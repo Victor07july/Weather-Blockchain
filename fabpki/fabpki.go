@@ -71,19 +71,23 @@ type WeatherAPI struct {
 	Situation   string `json:"situation"`
 	Temperature string `json:"temperature"`
 	//  Timestamp   string `json:"timestamp"`
-	Date 		string `json:"date"`
-	Hour 		string `json:"hour"`
+	Date string `json:"date"`
+	Hour string `json:"hour"`
 }
-
 
 type DadosEstacao struct {
 	// ID da estação é a chave e não entra no struct
-	DadosPrecipitacao 	[]string `json:"dadosprecipitacao"`
-	DadosMeteorologicos []string `json:"dadosmeteorologicos"`
-	HorarioAtualizacao    string `json:"horarioatualizacao"`
-	HorarioInserção 	  string `json:"horarioinsercao"`
+	HoraLeitura       string `json:"horaleitura"`
+	TotalUltimaHora   string `json:"totalultimahora"`
+	Situacao          string `json:"situacao"`
+	DirecaoVentoGraus string `json:"direcaoventograus"`
+	VelocidadeVento   string `json:"velocidadevento"`
+	Temperatura       string `json:"temperatura"`
+	Pressao           string `json:"pressao"`
+	Umidade           string `json:"umidade"`
+	TimestampEstacao  string `json:"timestampestacao"`
+	TimestampCliente  string `json:"timestampcliente"`
 }
-
 
 // PublicKeyDecodePEM method decodes a PEM format public key. So the smart contract can lead
 // with it, store in the blockchain, or even verify a signature.
@@ -129,13 +133,15 @@ func (s *SmartContract) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 	} else if fn == "getWeatherForecastRJ" {
 		// get weathr forecast
 		return s.getWeatherForecastRJ(stub, args)
+	} else if fn == "insertStationData" {
+		return s.insertStationData(stub, args)
+	} else if fn == "getStationData" {
+		return s.getStationData(stub, args)
 	}
 
 	//function fn not implemented, notify error
 	return shim.Error("Chaincode does not support this function.")
 }
-
-
 
 func (s *SmartContract) registerWeatherFromWeb(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 
@@ -345,7 +351,7 @@ func (s *SmartContract) getWeatherForecastRJ(stub shim.ChaincodeStubInterface, a
 	regiao := args[0]
 	fmt.Println(regiao)
 
-	// retrieve the station data from the ledger
+	// retrieve the data from the ledger
 	previsaoRioAsBytes, err := stub.GetState(regiao)
 	if err != nil {
 		fmt.Println(err)
@@ -357,13 +363,13 @@ func (s *SmartContract) getWeatherForecastRJ(stub shim.ChaincodeStubInterface, a
 		return shim.Error("Nenhuma previsão registrada para esta região")
 	}
 
-	//creates Station struct to manipulate returned bytes
+	//creates struct to manipulate returned bytes
 	MinhaPrevisao := PrevisaoRio{}
 
 	//loging...
 	fmt.Println("Retrieving station data: ", previsaoRioAsBytes)
 
-	//convert bytes into a station object
+	//convert bytes into a object
 	json.Unmarshal(previsaoRioAsBytes, &MinhaPrevisao)
 
 	// log
@@ -392,34 +398,110 @@ func (s *SmartContract) getWeatherForecastRJ(stub shim.ChaincodeStubInterface, a
 func (s *SmartContract) insertStationData(stub shim.ChaincodeStubInterface, args []string) sc.Response {
 
 	//validate args vector lenght
-	if len(args) != 5 {
-		return shim.Error("Os parâmetros esperados são: <ID da Estação> <Dados de precipitação> <Dados meteorológicos> <Horário de atualização> <Horário de inserção>")
+	if len(args) != 11 {
+		return shim.Error("Os parâmetros esperados são: ...")
 	}
 
 	idEstacao := args[0]
-	dadosPrecipitacao := []string{args[1]}
-	dadosMeteorologicos := []string{args[2]}
-	horarioAtualizacao := args[3]
-	horarioInsercao := args[4]
+	horaLeitura := args[1]
+	totalUltimaHora := args[2]
+	situacao := args[3]
+	direcaoVentoGraus := args[4]
+	velocidadeVento := args[5]
+	temperatura := args[6]
+	pressao := args[7]
+	umidade := args[8]
+	timestampEstacao := args[9]
+	timestampCliente := args[10]
 
 	var dadosEstacao = DadosEstacao{
-		DadosPrecipitacao: dadosPrecipitacao, 
-		DadosMeteorologicos: dadosMeteorologicos, 
-		HorarioAtualizacao: horarioAtualizacao, 
-		HorarioInserção: horarioInsercao,
+		HoraLeitura:       horaLeitura,
+		TotalUltimaHora:   totalUltimaHora,
+		Situacao:          situacao,
+		DirecaoVentoGraus: direcaoVentoGraus,
+		VelocidadeVento:   velocidadeVento,
+		Temperatura:       temperatura,
+		Pressao:           pressao,
+		Umidade:           umidade,
+		TimestampEstacao:  timestampEstacao,
+		TimestampCliente:  timestampCliente,
 	}
 
 	dadosEstacaoAsBytes, _ := json.Marshal(dadosEstacao)
 
-	//registers forecast in the ledger
+	//registra dados no ledger com o id da estação sendo a chave
 	stub.PutState(idEstacao, dadosEstacaoAsBytes)
 
 	var info = "Dados da estação registrados com sucesso!"
+
+	// returns all info
+	return shim.Success(
+		[]byte(info),
+	)
+}
+
+func (s *SmartContract) getStationData(stub shim.ChaincodeStubInterface, args []string) sc.Response {
+
+	//validate args vector lenght
+	if len(args) != 1 {
+		return shim.Error("It was expected the parameters: <\"ID da estação\">")
+	}
+
+	//gets the parameters
+	idEstacao := args[0]
+	fmt.Println(idEstacao)
+
+	// retrieve the station data from the ledger
+	dadosEstacaoAsBytes, err := stub.GetState(idEstacao)
+	if err != nil {
+		fmt.Println(err)
+		return shim.Error("Error retrieving station from the ledger")
+	}
+
+	// check if its null
+	if dadosEstacaoAsBytes == nil {
+		return shim.Error("Nenhuma dado registrado para esta estação")
+	}
+
+	//creates Station struct to manipulate returned bytes
+	MinhaEstacao := DadosEstacao{}
+
+	//loging...
+	fmt.Println("Retrieving data: ", dadosEstacaoAsBytes)
+
+	//convert bytes into a station object
+	json.Unmarshal(dadosEstacaoAsBytes, &MinhaEstacao)
+
+	// log
+	fmt.Println("Retrieving station data after unmarshall: ", MinhaEstacao)
+
+	horaLeitura 	  := string(MinhaEstacao.HoraLeitura)
+	totalUltimaHora   := string(MinhaEstacao.TotalUltimaHora)
+	situacao 		  := string(MinhaEstacao.Situacao)
+	direcaoVentoGraus := string(MinhaEstacao.DirecaoVentoGraus)
+	velocidadeVento   := string(MinhaEstacao.VelocidadeVento)
+	temperatura 	  := string(MinhaEstacao.Temperatura)
+	pressao 		  := string(MinhaEstacao.Pressao)
+	umidade 		  := string(MinhaEstacao.Umidade)
+	timestampEstacao  := string(MinhaEstacao.TimestampEstacao)
+	timestampCliente  := string(MinhaEstacao.TimestampCliente)
+
+	var info = "\nInformações (tabelas) disponiveis: " + situacao +
+		"\nHorario de leitura : " + horaLeitura +
+		"\nPrecipitação na última hora: " + totalUltimaHora +
+		"\nDireção do vento (graus): " + direcaoVentoGraus +
+		"\nVelocidade do vento: " + velocidadeVento +
+		"\nTemperatura: " + temperatura +
+		"\nPressão: " + pressao +
+		"\nUmidade: " + umidade +
+		"\nTimestamp da Estação (UNIX): " + timestampEstacao +
+		"\nTimestamp do Cliente (UNIX): " + timestampCliente
 
 	// returns all station info
 	return shim.Success(
 		[]byte(info),
 	)
+
 }
 
 /*
@@ -432,8 +514,8 @@ func (s *SmartContract) testCompositeKey(stub shim.ChaincodeStubInterface, args 
 	if len(args) != 6 {
 		return shim.Error("It was expected the parameters: <Região> <Temperatura Min/Max> <Céu Madrugada> <Céu Manhã>  <Insert Timestamp> <Forecast Timestamp>")
 	}
-	
-	
+
+
 
 }
 
